@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-teal anim-normal">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURA - Interactive Student Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Outfit Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- React and ReactDOM CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel CDN for compiling JSX in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      background-color: #08090C;
+      color: #F3F4F6;
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+    
+    /* Dynamic Theme Mappings */
+    :root, .theme-teal {
+      --color-accent: #00F2FE;
+      --color-accent-glow: rgba(0, 242, 254, 0.45);
+      --color-accent-border: rgba(0, 242, 254, 0.25);
+    }
+    .theme-pink {
+      --color-accent: #FF2E93;
+      --color-accent-glow: rgba(255, 46, 147, 0.45);
+      --color-accent-border: rgba(255, 46, 147, 0.25);
+    }
+    .theme-purple {
+      --color-accent: #B026FF;
+      --color-accent-glow: rgba(176, 38, 255, 0.45);
+      --color-accent-border: rgba(176, 38, 255, 0.25);
+    }
+    .theme-emerald {
+      --color-accent: #05FFC5;
+      --color-accent-glow: rgba(5, 255, 197, 0.45);
+      --color-accent-border: rgba(5, 255, 197, 0.25);
+    }
+    .theme-cyan {
+      --color-accent: #00E5FF;
+      --color-accent-glow: rgba(0, 229, 255, 0.45);
+      --color-accent-border: rgba(0, 229, 255, 0.25);
+    }
+
+    .text-accent { color: var(--color-accent); }
+    .bg-accent { background-color: var(--color-accent); }
+    .border-accent { border-color: var(--color-accent); }
+    .border-accent-border { border-color: var(--color-accent-border); }
+    
+    /* Glassmorphism Panel styles */
+    .glass-panel {
+      background: rgba(23, 24, 31, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .glass-panel:hover {
+      border-color: var(--color-accent-border);
+      box-shadow: 0 0 20px -5px var(--color-accent-glow);
+    }
+
+    /* Animation Intensity Configurations */
+    .anim-none * {
+      animation: none !important;
+      transition: none !important;
+    }
+    .anim-normal .hover-tilt {
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .anim-normal .hover-tilt:hover {
+      transform: translateY(-2px);
+    }
+    .anim-high .hover-tilt {
+      transition: transform 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .anim-high .hover-tilt:hover {
+      transform: translateY(-4px) scale(1.015);
+    }
+
+    .circle-gauge {
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0C10;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #242630;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-accent);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React Script containing JSX -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Custom Hook to hook up Lucide Icons after React rendering
+    const useLucide = (dep) => {
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [dep]);
+    };
+
+    const App = () => {
+      const [user, setUser] = useState({
+        name: "Arudeep Pandey",
+        college: "SRM IST (KTR Campus)"
+      });
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [accentColor, setAccentColor] = useState('teal');
+      const [animationIntensity, setAnimationIntensity] = useState('normal');
+      const [compactWidth, setCompactWidth] = useState(false);
+
+      // Sync and loader states
+      const [syncing, setSyncing] = useState(false);
+      const [syncMessage, setSyncMessage] = useState("");
+
+      // Settings dropdown
+      const [showConfig, setShowConfig] = useState(false);
+      // Holidays accordion state
+      const [holidaysOpen, setHolidaysOpen] = useState(false);
+
+      // Quick action preview modals
+      const [activeModal, setActiveModal] = useState(null);
+
+      // Attendance values
+      const [subjects, setSubjects] = useState([
+        { id: '1', name: '18CSC302J Computer Networks', attended: 31, total: 36, req: 75 },
+        { id: '2', name: '18CSC305J Software Engineering', attended: 28, total: 38, req: 75 },
+        { id: '3', name: '18MAB302T Discrete Mathematics', attended: 42, total: 48, req: 75 },
+        { id: '4', name: '18CSC301T Formal Languages & Automata', attended: 27, total: 36, req: 75 },
+        { id: '5', name: '18CSC381L Machine Learning Lab', attended: 12, total: 12, req: 75 },
+        { id: '6', name: '18GEM302T Professional Ethics', attended: 14, total: 20, req: 75 }
+      ]);
+
+      const [simulateSkips, setSimulateSkips] = useState(0);
+
+      // Tasks state
+      const [tasks, setTasks] = useState([
+        { id: '1', title: 'CN Lab Record Submission', subject: 'Computer Networks', date: '2026-06-18', priority: 'high', done: false },
+        { id: '2', title: 'Automata Theory Cycle Test prep', subject: 'Formal Languages', date: '2026-06-19', priority: 'medium', done: false },
+        { id: '3', title: 'ML Project Draft', subject: 'Machine Learning', date: '2026-06-21', priority: 'low', done: true }
+      ]);
+
+      const [newTaskTitle, setNewTaskTitle] = useState('');
+      const [newTaskSubject, setNewTaskSubject] = useState('Computer Networks');
+      const [newTaskDueDate, setNewTaskDueDate] = useState('');
+      const [newTaskPriority, setNewTaskPriority] = useState('medium');
+      const [showTaskForm, setShowTaskForm] = useState(false);
+
+      // Apply theme classes directly to the html tag
+      useEffect(() => {
+        const root = document.documentElement;
+        root.className = `theme-${accentColor} anim-${animationIntensity}`;
+      }, [accentColor, animationIntensity]);
+
+      useLucide(activeTab + showConfig + holidaysOpen + activeModal + showTaskForm + tasks.length + syncing);
+
+      // Calculations
+      const totalAttended = subjects.reduce((sum, s) => sum + s.attended, 0);
+      const totalClasses = subjects.reduce((sum, s) => sum + s.total, 0);
+      const overallPercent = totalClasses > 0 ? parseFloat(((totalAttended / totalClasses) * 100).toFixed(1)) : 0;
+
+      // Simulations on first subject
+      const testSub = subjects[0];
+      const testAttended = testSub.attended;
+      const testTotal = testSub.total + simulateSkips;
+      const testPercent = testTotal > 0 ? parseFloat(((testAttended / testTotal) * 100).toFixed(1)) : 0;
+      const testStatus = testPercent >= 75 ? 'safe' : 'bunk';
+
+      // Sync portal simulator
+      const triggerSync = () => {
+        setSyncing(true);
+        setSyncMessage("Authenticating with SRM IST portal credentials...");
+        
+        setTimeout(() => setSyncMessage("Decrypting security tokens..."), 1000);
+        setTimeout(() => setSyncMessage("Caching latest internal marks & daily schedule..."), 2000);
+        setTimeout(() => {
+          setSyncing(false);
+          setSyncMessage("");
+          alert("Academic databases successfully synchronized!");
+        }, 3000);
+      };
+
+      const handleAddTask = (e) => {
+        e.preventDefault();
+        if (!newTaskTitle || !newTaskDueDate) return;
+        const task = {
+          id: Date.now().toString(),
+          title: newTaskTitle,
+          subject: newTaskSubject,
+          date: newTaskDueDate,
+          priority: newTaskPriority,
+          done: false
+        };
+        setTasks([task, ...tasks]);
+        setNewTaskTitle('');
+        setNewTaskDueDate('');
+        setShowTaskForm(false);
+      };
+
+      const renderTab = () => {
+        if (activeTab !== 'dashboard') {
+          return (
+            <div className="p-10 text-center space-y-4 max-w-lg mx-auto mt-20">
+              <i data-lucide="compass" class="w-16 h-16 mx-auto text-accent animate-spin-slow"></i>
+              <h2 className="text-2xl font-bold capitalize">{activeTab} Module</h2>
+              <p className="text-gray-400">This section is fully mapped and caching dynamic portal arrangements in the background.</p>
+              <button onClick={() => setActiveTab('dashboard')} className="px-5 py-2.5 bg-accent/10 border border-accent-border text-accent rounded-xl text-xs font-bold hover:bg-accent/20 transition-all">
+                Return to Dashboard
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-6">
+            {/* Header section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-900 pb-5">
+              <div>
+                <h1 className="text-3xl font-extrabold tracking-tight">
+                  Good Afternoon, <span className="text-accent drop-shadow-[0_0_10px_var(--color-accent-glow)]">{user.name}</span>!
+                </h1>
+                <p className="text-gray-400 text-sm mt-1">
+                  Connected to <span className="text-gray-300 font-semibold">{user.college}</span> • Last synced 2 hours ago
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={triggerSync}
+                  disabled={syncing}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border border-accent-border bg-accent/10 hover:bg-accent/20 text-accent transition-all duration-300 shadow-md"
+                >
+                  <i data-lucide="rotate-cw" class={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`}></i>
+                  {syncing ? 'Syncing...' : 'Sync Portal'}
+                </button>
+                <button className="relative bg-darkCard border border-gray-800 hover:border-gray-700 p-2.5 rounded-xl text-gray-400 hover:text-white transition-all">
+                  <i data-lucide="bell" class="w-5 h-5"></i>
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                <button 
+                  onClick={() => setShowConfig(!showConfig)}
+                  className="bg-darkCard border border-gray-800 hover:border-accent-border p-2.5 rounded-xl text-gray-400 hover:text-accent transition-all"
+                >
+                  <i data-lucide="sliders" class="w-5 h-5"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Sync Overlay banner */}
+            {syncing && (
+              <div className="bg-darkCard border border-accent-border rounded-2xl p-4 flex items-center gap-4 animate-pulse">
+                <i data-lucide="loader" class="w-5 h-5 text-accent animate-spin"></i>
+                <p className="text-sm font-medium text-gray-300">{syncMessage}</p>
+              </div>
+            )}
+
+            {/* Config drawer */}
+            {showConfig && (
+              <div className="glass-panel rounded-2xl p-5 space-y-4 animate-slide-up">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-2">
+                  <h3 className="font-bold text-md text-white flex items-center gap-2">
+                    <i data-lucide="settings" class="w-4 h-4 text-accent"></i> Customize Dashboard Aesthetic
+                  </h3>
+                  <button onClick={() => setShowConfig(false)} className="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                  <div className="space-y-2">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Accent Glow Color</span>
+                    <div className="flex items-center gap-3">
+                      {['teal', 'pink', 'purple', 'emerald', 'cyan'].map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setAccentColor(c)}
+                          className={`w-7 h-7 rounded-full transition-transform active:scale-95 ${
+                            c === 'teal' ? 'bg-[#00F2FE]' :
+                            c === 'pink' ? 'bg-[#FF2E93]' :
+                            c === 'purple' ? 'bg-[#B026FF]' :
+                            c === 'emerald' ? 'bg-[#05FFC5]' : 'bg-[#00E5FF]'
+                          } ${accentColor === c ? 'ring-2 ring-white ring-offset-2 ring-offset-darkBg' : ''}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Animation Speeds</span>
+                    <div className="flex bg-darkCard border border-gray-800 rounded-xl p-1">
+                      {['none', 'normal', 'high'].map(i => (
+                        <button
+                          key={i}
+                          onClick={() => setAnimationIntensity(i)}
+                          className={`flex-1 text-xs py-1.5 rounded-lg capitalize font-medium transition-all ${
+                            animationIntensity === i ? 'bg-accent/15 text-accent' : 'text-gray-400 hover:text-white'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2 flex flex-col justify-center">
+                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-1">Layout Configuration</span>
+                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={compactWidth}
+                        onChange={(e) => setCompactWidth(e.target.checked)}
+                        className="rounded border-gray-800 bg-darkCard text-accent focus:ring-accent"
+                      />
+                      <span className="text-sm text-gray-300 font-medium">Compact Content Width</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Academic rows */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Card A: Attendance circularSVG */}
+              <div className="glass-panel rounded-3xl p-6 flex flex-col hover-tilt relative overflow-hidden">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <span className="bg-accent/10 border border-accent-border text-accent text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">Performance</span>
+                    <h2 className="text-xl font-bold text-white mt-1.5">Overall Attendance</h2>
+                  </div>
+                  <span className="text-xs text-gray-400">Mandate: 75%</span>
+                </div>
+                <div className="flex flex-col sm:flex-row items-center gap-6 mt-2 flex-1">
+                  <div className="relative w-36 h-36 flex-shrink-0">
+                    <svg className="w-full h-full" viewBox="0 0 100 100">
+                      <circle className="text-gray-800" strokeWidth="8" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50" />
+                      <circle className="text-accent circle-gauge" strokeWidth="8" strokeDasharray="238.76" strokeDashoffset={238.76 * (1 - overallPercent / 100)} strokeLinecap="round" stroke="currentColor" fill="transparent" r="38" cx="50" cy="50" />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-3xl font-extrabold text-white">{overallPercent}%</span>
+                      <span className="text-[10px] uppercase font-bold text-gray-500 mt-0.5">{totalAttended}/{totalClasses} Classes</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3.5 w-full">
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      Your presence is currently <span className="text-accent font-bold">{overallPercent >= 75 ? 'Safe' : 'Critical'}</span>. Adjust the range to test skippings.
+                    </p>
+                    <div className="bg-darkCard/40 border border-gray-900 rounded-2xl p-3.5 space-y-2">
+                      <div className="flex justify-between text-xs text-gray-300">
+                        <span>Bunk upcoming classes:</span>
+                        <span className="text-accent font-bold">+{simulateSkips} class(es)</span>
+                      </div>
+                      <input 
+                        type="range" min="0" max="10" value={simulateSkips}
+                        onChange={(e) => setSimulateSkips(parseInt(e.target.value))}
+                        className="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-accent"
+                      />
+                      <div className="flex justify-between text-xs pt-1 border-t border-gray-800">
+                        <span className="text-gray-400">New Attendance:</span>
+                        <span className={`font-bold ${testStatus === 'safe' ? 'text-green-400' : 'text-red-400'}`}>
+                          {testPercent}% ({testStatus === 'safe' ? 'Safe to skip' : 'DANGER!'})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card B: Internal Marks bar lines */}
+              <div className="glass-panel rounded-3xl p-6 hover-tilt">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <span className="bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full">Academic Log</span>
+                    <h2 className="text-xl font-bold text-white mt-1.5">Internal Marks</h2>
+                  </div>
+                  <span className="text-xs text-gray-400">Scale: 50 max Cycle Tests</span>
+                </div>
+                <div className="space-y-4">
+                  {[
+                    { name: 'Computer Networks', score: 41.5 },
+                    { name: 'Software Engineering', score: 39.5 },
+                    { name: 'Discrete Mathematics', score: 47.5 },
+                    { name: 'Formal Languages', score: 32.5 }
+                  ].map((s, idx) => (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="font-semibold text-gray-300">{s.name}</span>
+                        <span className="text-gray-400 font-semibold">{s.score}/50</span>
+                      </div>
+                      <div className="w-full h-2 bg-darkCard border border-gray-800 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full bg-gradient-to-r from-pink-500 to-accent"
+                          style={{ width: `${(s.score / 50) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Actions Grid */}
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest block px-1">Quick Action Modules</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { id: 'feed', name: 'Feed', icon: 'rss', color: 'text-pink-500' },
+                  { id: 'elib', name: 'E-Library', icon: 'book-open', color: 'text-cyan-500' },
+                  { id: 'seat', name: 'Seat Finder', icon: 'compass', color: 'text-teal-500' },
+                  { id: 'roomie', name: 'Roommate', icon: 'home', color: 'text-purple-500' },
+                  { id: 'hack', name: 'Hackathons', icon: 'trophy', color: 'text-emerald-500' },
+                  { id: 'cgpa', name: 'CGPA Calc', icon: 'calculator', color: 'text-pink-500' },
+                  { id: 'feedback', name: 'Auto Feedback', icon: 'message-square', color: 'text-teal-500' },
+                  { id: 'market', name: 'Marketplace', icon: 'shopping-bag', color: 'text-purple-500' },
+                ].map(action => (
+                  <button
+                    key={action.id}
+                    onClick={() => setActiveModal(action.id)}
+                    className="glass-panel border border-gray-800 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-all hover-tilt"
+                  >
+                    <div className="bg-darkCard p-3 rounded-xl border border-gray-800">
+                      <i data-lucide={action.icon} className={`w-6 h-6 ${action.color}`}></i>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-300">{action.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Lower row widgets */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* Task manager */}
+              <div className="glass-panel rounded-3xl p-6 lg:col-span-2 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-white">Upcoming Tasks</h2>
+                  <button 
+                    onClick={() => setShowTaskForm(!showTaskForm)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border border-accent-border bg-accent/10 text-accent hover:bg-accent/20 transition-all"
+                  >
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Task
+                  </button>
+                </div>
+
+                {showTaskForm && (
+                  <form onSubmit={handleAddTask} className="bg-darkCard border border-gray-800 p-4 rounded-2xl mb-4 space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input 
+                        type="text" placeholder="Task description..." value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        className="bg-darkBg border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-accent w-full"
+                        required
+                      />
+                      <select 
+                        value={newTaskSubject} onChange={(e) => setNewTaskSubject(e.target.value)}
+                        className="bg-darkBg border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-accent w-full"
+                      >
+                        {subjects.map(s => (
+                          <option key={s.id} value={s.name}>{s.name.split(' ').slice(1).join(' ')}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <input 
+                        type="date" value={newTaskDueDate} onChange={(e) => setNewTaskDueDate(e.target.value)}
+                        className="bg-darkBg border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-accent w-full"
+                        required
+                      />
+                      <select 
+                        value={newTaskPriority} onChange={(e) => setNewTaskPriority(e.target.value)}
+                        className="bg-darkBg border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-accent w-full"
+                      >
+                        <option value="low">Low Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="high">High Priority</option>
+                      </select>
+                      <button type="submit" className="bg-accent/20 border border-accent-border text-accent rounded-xl text-xs font-bold hover:bg-accent/30 transition-all py-2">
+                        Save Task
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="space-y-2.5 overflow-y-auto max-h-[260px] pr-2">
+                  {tasks.map(task => (
+                    <div key={task.id} className={`border rounded-2xl p-3.5 flex items-center justify-between gap-4 ${task.done ? 'bg-darkCard/30 border-gray-900 opacity-60' : 'bg-darkCard border-gray-900'}`}>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={() => setTasks(tasks.map(t => t.id === task.id ? {...t, done: !t.done} : t))}
+                          className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${task.done ? 'border-accent bg-accent/15 text-accent' : 'border-gray-700'}`}
+                        >
+                          {task.done && <i data-lucide="check" class="w-3.5 h-3.5"></i>}
+                        </button>
+                        <div>
+                          <h4 className={`text-xs font-bold text-gray-200 ${task.done ? 'line-through text-gray-500' : ''}`}>{task.title}</h4>
+                          <p className="text-[10px] text-gray-500 mt-0.5">{task.subject}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                          task.priority === 'high' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                          task.priority === 'medium' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                          'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                        }`}>{task.priority}</span>
+                        <span className="text-[10px] text-gray-500 font-semibold">{task.date}</span>
+                        <button onClick={() => setTasks(tasks.filter(t => t.id !== task.id))} className="text-gray-600 hover:text-red-400">
+                          <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Schedule and Holidays */}
+              <div className="space-y-6">
+                
+                {/* Schedule timeline */}
+                <div className="glass-panel rounded-3xl p-5 space-y-4">
+                  <h3 className="text-sm font-bold text-white flex justify-between items-center">
+                    <span>Today's Classes</span>
+                    <span className="text-[9px] bg-accent/10 border border-accent-border text-accent px-2 py-0.5 rounded-full font-bold">ACTIVE</span>
+                  </h3>
+                  <div className="space-y-3 relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-800">
+                    {[
+                      { time: '09:00 AM - 09:50 AM', subject: '18CSC302J Computer Networks', active: false },
+                      { time: '10:00 AM - 10:50 AM', subject: '18CSC305J Software Engineering', active: true },
+                      { time: '11:00 AM - 11:50 AM', subject: '18MAB302T Discrete Mathematics', active: false }
+                    ].map((c, idx) => (
+                      <div key={idx} className="flex gap-4 relative">
+                        <div className={`w-9 h-9 rounded-full border flex items-center justify-center z-10 ${c.active ? 'bg-accent/20 border-accent text-accent shadow-md' : 'bg-darkCard border-gray-800 text-gray-600'}`}>
+                          <i data-lucide="clock" class="w-4 h-4"></i>
+                        </div>
+                        <div className={`flex-1 p-3 rounded-2xl border ${c.active ? 'bg-accent/5 border-accent/20' : 'bg-darkCard/40 border-gray-800'}`}>
+                          <span className="text-[9px] text-gray-500 font-bold block">{c.time}</span>
+                          <h4 className="text-xs font-bold text-gray-300 mt-1">{c.subject}</h4>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Holiday dropdown accordion */}
+                <div className="glass-panel rounded-3xl p-5">
+                  <button 
+                    onClick={() => setHolidaysOpen(!holidaysOpen)}
+                    className="w-full flex items-center justify-between text-sm font-bold text-white"
+                  >
+                    <div className="flex items-center gap-2">
+                      <i data-lucide="calendar" class="w-4 h-4 text-accent"></i>
+                      <span>Holidays in June: 3 Days</span>
+                    </div>
+                    <i data-lucide={holidaysOpen ? "chevron-up" : "chevron-down"} class="w-4 h-4 text-gray-500"></i>
+                  </button>
+
+                  {holidaysOpen && (
+                    <div className="mt-4 border-t border-gray-900 pt-3.5 space-y-2">
+                      {[
+                        { occasion: 'Juneteenth Special Leave', date: 'June 19, 2026' },
+                        { occasion: 'End Semester Study Leave', date: 'June 25, 2026' },
+                        { occasion: 'Campus Fest Special Off', date: 'June 29, 2026' }
+                      ].map((h, idx) => (
+                        <div key={idx} className="flex justify-between bg-darkCard border border-gray-900 p-2.5 rounded-xl text-xs">
+                          <span className="font-semibold text-gray-300">{h.occasion}</span>
+                          <span className="text-gray-500 font-bold">{h.date}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        );
+      };
+
+      return (
+        <div className="min-h-screen flex">
+          {/* Collapsible sidebar */}
+          <aside className="glass-panel border-r border-gray-800 flex flex-col h-screen fixed left-0 top-0 w-64 z-30">
+            <div className="flex items-center gap-3 p-5 border-b border-gray-800 h-20">
+              <div className="bg-accent/15 p-2 rounded-xl border border-accent-border">
+                <i data-lucide="graduation-cap" class="w-6 h-6 text-accent"></i>
+              </div>
+              <span className="font-bold text-md tracking-wider bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">AURA PORTAL</span>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+              {[
+                { title: 'EXPLORE', items: [
+                  { id: 'dashboard', name: 'Dashboard', icon: 'layout-dashboard' },
+                  { id: 'elibrary', name: 'E-Library', icon: 'book-open' },
+                  { id: 'feed', name: 'Feed', icon: 'rss' },
+                  { id: 'hackathons', name: 'Hackathons', icon: 'trophy' }
+                ]},
+                { title: 'FINDER', items: [
+                  { id: 'teamfinder', name: 'Team Finder', icon: 'users' },
+                  { id: 'seatfinder', name: 'Seat Finder', icon: 'compass' }
+                ]},
+                { title: 'FOR CLUBS', items: [
+                  { id: 'synergy', name: 'Synergy Circles', icon: 'orbit' } // Unique renaming
+                ]},
+                { title: 'UTILITIES', items: [
+                  { id: 'marketplace', name: 'Marketplace', icon: 'shopping-bag' }
+                ]}
+              ].map((section, idx) => (
+                <div key={idx} className="space-y-2">
+                  <span className="text-[10px] font-bold tracking-widest text-gray-600 block px-3">{section.title}</span>
+                  <ul className="space-y-1">
+                    {section.items.map(item => (
+                      <li key={item.id}>
+                        <button
+                          onClick={() => setActiveTab(item.id)}
+                          className={`w-full flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-xs font-semibold border ${
+                            activeTab === item.id 
+                              ? 'bg-accent/10 border-accent-border text-accent shadow-md' 
+                              : 'text-gray-400 hover:text-white hover:bg-darkCard/40 border-transparent'
+                          }`}
+                        >
+                          <i data-lucide={item.icon} class="w-4.5 h-4.5"></i>
+                          <span>{item.name}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </aside>
+
+          {/* Main panel container */}
+          <main className="flex-1 ml-64 p-6 overflow-y-auto min-w-0">
+            <div className={compactWidth ? 'max-w-5xl mx-auto' : 'w-full'}>
+              {renderTab()}
+            </div>
+          </main>
+
+          {/* Quick action detail modal */}
+          {activeModal && (
+            <div className="fixed inset-0 flex items-center justify-center bg-black/75 z-50 p-4 backdrop-filter backdrop-blur-sm">
+              <div className="bg-darkCard border border-accent-border rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+                <div className="flex justify-between items-center border-b border-gray-900 pb-3">
+                  <h3 className="font-bold text-lg text-white capitalize">{activeModal} Simulation</h3>
+                  <button onClick={() => setActiveModal(null)} className="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                  </button>
+                </div>
+                <div className="text-sm text-gray-300 leading-relaxed py-2">
+                  {activeModal === 'feed' && <p>Displaying SRM KTR campus announcements. A convocations schedule was updated for July 14, 2026.</p>}
+                  {activeModal === 'elib' && <p>Dynamic digital library containing 24 syllabus booklets, 12 computer science textbook caches, and 5 lab reports.</p>}
+                  {activeModal === 'seat' && (
+                    <div className="space-y-2">
+                      <p>Your allocated seats for cycle tests:</p>
+                      <div className="bg-darkBg border border-gray-800 p-2.5 rounded-xl text-xs flex justify-between">
+                        <span>Computer Networks</span>
+                        <span className="text-accent font-bold">Tech Park 602 (B-12)</span>
+                      </div>
+                    </div>
+                  )}
+                  {activeModal === 'roomie' && <p>Roommate recommendations matches based on sleeping hours and project assignments.</p>}
+                  {activeModal === 'hack' && <p>Trending student hackathons. Next team registrations are open for SRM Hack 2026.</p>}
+                  {activeModal === 'cgpa' && <p>Estimated Cumulative Grade Point Average calculated locally: <strong className="text-accent">8.94 CGPA</strong>.</p>}
+                  {activeModal === 'feedback' && <p>Automated professor survey feedback tool. Rates performance metrics automatically with one click.</p>}
+                  {activeModal === 'market' && <p>Trade lab kits, routers, and textbooks. 5 available listings currently found in the hostels.</p>}
+                </div>
+                <div className="flex justify-end">
+                  <button onClick={() => setActiveModal(null)} className="px-5 py-2 rounded-xl text-xs bg-darkBg hover:bg-gray-800 font-bold border border-gray-800">
+                    Close Window
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
