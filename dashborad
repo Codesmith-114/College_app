@@ -1,0 +1,119 @@
+// pages/Dashboard.tsx
+import React from 'react';
+import { Layout } from '../components/Layout';
+import { motion } from 'framer-motion';
+import { Bell, RefreshCw, Plus, Calendar, MapPin, Code, BookMarked, ShoppingBag } from 'lucide-react';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
+
+export default function Dashboard() {
+  return (
+    <Layout>
+      <div className="max-w-6xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <header className="flex justify-between items-center">
+          <div>
+            <p className="text-gray-400">Monday, June 15</p>
+            <h1 className="text-3xl font-bold text-white mt-1">Good Afternoon, Alex!</h1>
+          </div>
+          <div className="flex gap-4">
+            <button className="p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] hover:text-[var(--color-primary)] transition">
+              <RefreshCw size={20} />
+            </button>
+            <button className="p-2 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] hover:text-white transition">
+              <Bell size={20} />
+            </button>
+            <button className="flex items-center gap-2 bg-[var(--color-accent)] text-black px-4 py-2 rounded-lg font-semibold hover:opacity-90 transition">
+              <Plus size={18} /> Create Task
+            </button>
+          </div>
+        </header>
+
+        {/* Dynamic Grid Layout */}
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          {/* Attendance Card */}
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-4">
+               <span className="text-[10px] font-bold tracking-widest text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-1 rounded">ACADEMIC</span>
+             </div>
+             <h3 className="text-lg font-semibold mb-4">Overall Attendance</h3>
+             <div className="flex items-center gap-8">
+               {/* Circular Progress Placeholder */}
+               <div className="w-24 h-24 rounded-full border-4 border-[var(--color-primary)] border-t-transparent flex items-center justify-center">
+                 <span className="text-2xl font-bold text-white">82%</span>
+               </div>
+               <div>
+                 <p className="text-gray-400 text-sm">Safe to skip</p>
+                 <p className="text-2xl font-bold text-white">4 Classes</p>
+                 <p className="text-xs text-green-400 mt-1">Above 75% Mandate</p>
+               </div>
+             </div>
+          </motion.div>
+
+          {/* Quick Actions Grid */}
+          <motion.div variants={itemVariants} className="col-span-1 grid grid-cols-2 gap-4">
+             <QuickAction icon={<MapPin className="text-blue-400" />} label="Seat Finder" />
+             <QuickAction icon={<Code className="text-green-400" />} label="Hackathons" />
+             <QuickAction icon={<BookMarked className="text-purple-400" />} label="E-Library" />
+             <QuickAction icon={<ShoppingBag className="text-orange-400" />} label="Marketplace" />
+          </motion.div>
+
+          {/* Today's Timeline / Classes */}
+          <motion.div variants={itemVariants} className="col-span-1 md:col-span-2 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6">
+             <h3 className="text-lg font-semibold mb-4">Today's Schedule</h3>
+             <div className="space-y-4">
+                <TimelineItem time="09:00 AM" subject="Data Structures" room="Room 402" active />
+                <TimelineItem time="11:30 AM" subject="Cloud Computing" room="Lab 2" />
+             </div>
+          </motion.div>
+
+          {/* Upcoming Holidays Widget */}
+          <motion.div variants={itemVariants} className="col-span-1 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl p-6">
+             <div className="flex items-center gap-3 mb-4">
+               <Calendar className="text-[var(--color-accent)]" />
+               <h3 className="text-lg font-semibold">Holidays in June</h3>
+             </div>
+             <p className="text-4xl font-bold text-white mb-2">19<span className="text-sm text-gray-500 font-normal"> Days off</span></p>
+             <p className="text-sm text-gray-400">Next: Summer Break starts in 3 days.</p>
+          </motion.div>
+
+        </motion.div>
+      </div>
+    </Layout>
+  );
+}
+
+// Sub-components
+const QuickAction = ({ icon, label }: { icon: React.ReactNode, label: string }) => (
+  <div className="bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--color-accent)] cursor-pointer transition-colors rounded-xl p-4 flex flex-col items-center justify-center gap-2">
+    {icon}
+    <span className="text-xs font-medium text-gray-300">{label}</span>
+  </div>
+);
+
+const TimelineItem = ({ time, subject, room, active = false }: any) => (
+  <div className={`flex gap-4 p-3 rounded-lg border ${active ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5' : 'border-transparent'}`}>
+    <div className="text-sm font-medium text-gray-400 whitespace-nowrap pt-1">{time}</div>
+    <div>
+      <h4 className="text-white font-medium">{subject}</h4>
+      <p className="text-xs text-gray-500">{room}</p>
+    </div>
+  </div>
+);

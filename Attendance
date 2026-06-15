@@ -1,0 +1,38 @@
+// utils/attendanceTracker.ts
+
+interface AttendanceStats {
+  attended: number;
+  total: number;
+  mandateThreshold?: number; // Usually 0.75 (75%)
+}
+
+export function calculateAttendanceMargins({ attended, total, mandateThreshold = 0.75 }: AttendanceStats) {
+  if (total === 0) return { status: 'NO_DATA', safeSkips: 0, classesToRecover: 0, currentPercentage: 0 };
+
+  const currentPercentage = attended / total;
+  
+  // Safe Skip Calculation
+  // Formula: (Attended) / (Total + Skips) >= Threshold
+  // Skips <= (Attended / Threshold) - Total
+  let safeSkips = Math.floor((attended / mandateThreshold) - total);
+  
+  // Recovery Calculation
+  // Formula: (Attended + Recovery) / (Total + Recovery) >= Threshold
+  // Recovery >= (Threshold * Total - Attended) / (1 - Threshold)
+  let classesToRecover = Math.ceil((mandateThreshold * total - attended) / (1 - mandateThreshold));
+
+  // Clean up edge cases
+  if (safeSkips < 0) safeSkips = 0;
+  if (classesToRecover < 0) classesToRecover = 0;
+
+  return {
+    currentPercentage: (currentPercentage * 100).toFixed(1),
+    isSafe: currentPercentage >= mandateThreshold,
+    safeSkips,
+    classesToRecover
+  };
+}
+
+// Example Usage:
+// const stats = calculateAttendanceMargins({ attended: 30, total: 35, mandateThreshold: 0.75 });
+// returns: { currentPercentage: "85.7", isSafe: true, safeSkips: 5, classesToRecover: 0 }

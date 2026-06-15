@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-main: #0f1115; /* Deep Charcoal/Navy */
+  --bg-card: #1a1d24;
+  --border-color: #272a35;
+  --color-primary: #ec4899; /* Pink */
+  --color-accent: #14b8a6; /* Teal */
+}
+
+body {
+  background-color: var(--bg-main);
+  color: #e5e7eb;
+}
